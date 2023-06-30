@@ -8,8 +8,6 @@ import socketRouter from "./routes/socketRouter.js";
 
 dotenv.config();
 
-const { REACT_APP_SERVER_URL, PORT } = process.env;
-
 function setupMiddleware(app) {
     app.use(cors());
     app.use(express.json());
@@ -22,6 +20,7 @@ function setupMiddleware(app) {
 // This function sets up all the routes for the app
 function setupRoutes(app) {
     app.use("/webSocket", socketRouter);
+    app.get("/", () => "Websocket server set up successfully");
 }
 
 // The main function that starts the app
@@ -31,9 +30,9 @@ async function start() {
     setupMiddleware(app);
     setupRoutes(app);
 
-    const chosen_port = PORT || 3002;
-
-    app.listen(chosen_port, () => console.log(`SERVER STARTED ON ${chosen_port}`));
+    app.listen(process.env.PORT || 3002, () =>
+        console.log(`SERVER STARTED ON ${process.env.PORT || 3002}`)
+    );
 }
 
 start();
