@@ -5,6 +5,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import socketRouter from "./routes/socketRouter.js";
+import marketStatusRouter from "./routes/marketStatusRouter.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ function setupMiddleware(app) {
 function setupRoutes(app) {
     app.use("/webSocket", socketRouter);
     app.get("/", () => "Websocket server set up successfully");
+    app.use("/getMarketStatus", marketStatusRouter);
 }
 
 // The main function that starts the app

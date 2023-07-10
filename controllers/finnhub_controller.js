@@ -70,10 +70,6 @@ async function getPrice(req, res) {
             return res.json({
                 ticker,
                 price: undefined,
-                marketStatus: usMarketStatus.current_status,
-                marketOpen: usMarketStatus.local_open,
-                marketClose: usMarketStatus.local_close,
-                marketNotes: usMarketStatus.notes,
             });
         }
 
@@ -98,27 +94,10 @@ async function getPrice(req, res) {
         // Update the last access time every time you access a ticker
         subscriptions[ticker] = Date.now();
 
-        // // If the ticker is not inside the cache, use AlphaVantage to pull the price
-        // if (!prices[ticker]) {
-        //     await axios
-        //         .get(
-        //             `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
-        //         )
-        //         .then((response) => {
-        //             const current_price = response.data["Global Quote"]["05. price"];
-        //             prices[ticker] = current_price;
-        //         })
-        //         .catch((err) => console.log(err));
-        // }
-
         // Return the price from the cache
         return res.json({
             ticker,
             price: prices[ticker],
-            marketStatus: usMarketStatus.current_status,
-            marketOpen: usMarketStatus.local_open,
-            marketClose: usMarketStatus.local_close,
-            marketNotes: usMarketStatus.notes,
         });
     } catch (error) {
         console.log(error);
@@ -161,6 +140,18 @@ async function updateUSMarketStatus() {
     }
 }
 
+async function getMarketStatus(req, res) {
+    try {
+        if (!usMarketStatus) {
+            await updateUSMarketStatus();
+        }
+        return res.json(usMarketStatus);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
 // Schedule the updateUSMarketStatus function to run every hour
 cron.schedule("0 * * * *", updateUSMarketStatus);
 
@@ -181,4 +172,4 @@ cron.schedule("0 * * * *", () => {
     }
 });
 
-export { getPrice };
+export { getPrice, getMarketStatus };
