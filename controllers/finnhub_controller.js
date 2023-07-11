@@ -83,22 +83,64 @@ async function getPrice(req, res) {
             subscriptions[ticker] = Date.now();
         }
 
-        // Make 2 attempts over the span of 4 seconds to retrieve the price
-        try {
-            const price = await waitForPrice(ticker);
-            prices[ticker] = price;
-        } catch (error) {
-            console.log("Error waiting for price" + error);
-        }
+        //REPLACEMENT VERSION 1
 
-        // Update the last access time every time you access a ticker
-        subscriptions[ticker] = Date.now();
+        let price = prices[ticker];
 
-        // Return the price from the cache
-        return res.json({
-            ticker,
-            price: prices[ticker],
-        });
+        setTimeout(async () => {
+            // If the price is not available through WebSocket after 2 seconds, get it from the REST API
+            if (!price) {
+                const response = await axios.get(
+                    `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
+                );
+                if (response.data && response.data.c) {
+                    price = response.data.c; // Current price
+                    prices[ticker] = price; // Save the price in the cache
+                }
+            }
+            // Update the last access time every time you access a ticker
+            subscriptions[ticker] = Date.now();
+
+            // Return the price from the cache
+            return res.json({
+                ticker,
+                price: prices[ticker],
+            });
+        }, 2000);
+
+        //END OF VERSION 1
+        //REPLACEMENT VERSION 2
+
+        // let price;
+
+        // // Make an attempt to retrieve the price
+        // try {
+        //     price = await waitForPrice(ticker);
+        // } catch (error) {
+        //     console.log("No WebSocket update for price, falling back to REST API");
+        // }
+
+        // // If the price is not available through WebSocket, get it from the REST API
+        // if (!price) {
+        //     const response = await axios.get(
+        //         `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
+        //     );
+        //     if (response.data && response.data.c) {
+        //         price = response.data.c; // Current price
+        //         // Save the price in the cache
+        //         prices[ticker] = price;
+        //     }
+        // }
+
+        // // Update the last access time every time you access a ticker
+        // subscriptions[ticker] = Date.now();
+
+        // // Return the price from the cache
+        // return res.json({
+        //     ticker,
+        //     price: prices[ticker],
+        // });
+        //END OF VERSION 2
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal Server Error" });
