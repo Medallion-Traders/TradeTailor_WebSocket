@@ -41,7 +41,7 @@ ws.on("error", (error) => {
     console.log("WebSocket error: ", error);
 });
 
-function waitForPrice(ticker, attempts = 2) {
+function waitForPrice(ticker, attempts = 1) {
     return new Promise((resolve, reject) => {
         let count = 0;
         const intervalId = setInterval(() => {
