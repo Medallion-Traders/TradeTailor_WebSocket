@@ -41,7 +41,7 @@ ws.on("error", (error) => {
     console.log("WebSocket error: ", error);
 });
 
-function waitForPrice(ticker, attempts = 5) {
+function waitForPrice(ticker, attempts = 2) {
     return new Promise((resolve, reject) => {
         let count = 0;
         const intervalId = setInterval(() => {
@@ -83,7 +83,7 @@ async function getPrice(req, res) {
             subscriptions[ticker] = Date.now();
         }
 
-        // Make 5 attempts over the span of 10 seconds to retrieve the price
+        // Make 2 attempts over the span of 4 seconds to retrieve the price
         try {
             const price = await waitForPrice(ticker);
             prices[ticker] = price;
