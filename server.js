@@ -21,7 +21,13 @@ function setupMiddleware(app) {
 // This function sets up all the routes for the app
 function setupRoutes(app) {
     app.use("/webSocket", socketRouter);
-    app.get("/", () => "Websocket server set up successfully");
+    app.get("/", () =>
+        console.log(
+            `${process.env.PORT || 3002} Port server is ready and established connection with ${
+                process.env.REACT_APP_SERVER_URL
+            }`
+        )
+    );
     app.use("/getMarketStatus", marketStatusRouter);
 }
 

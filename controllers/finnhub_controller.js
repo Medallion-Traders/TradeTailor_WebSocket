@@ -18,8 +18,8 @@ ws.on("open", async () => {
         // Inform backend server that websocket is switched on
         const backend_url = process.env.REACT_APP_SERVER_URL;
         await axios.get(`${backend_url}/webSocket`);
-    } catch (error) {
-        console.log("Error connecting to backend server:", error);
+    } catch (axiosError) {
+        console.log("Error connecting to backend server, connection terminated");
     }
 });
 
