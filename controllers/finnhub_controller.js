@@ -4,7 +4,14 @@ import axios from "axios";
 import cron from "node-cron";
 import { DateTime, Settings } from "luxon";
 
-Settings.defaultZoneName = "America/New_York";
+// Set default zone
+Settings.defaultZoneName = "UTC";
+
+// Get current date in UTC
+const currentDate = DateTime.utc();
+
+// Convert currentDate to New York time
+const currentDateNY = currentDate.setZone("America/New_York");
 
 dotenv.config();
 
@@ -183,22 +190,33 @@ async function updateUSMarketStatus() {
                 current_status: usMarket.current_status,
                 notes: usMarket.notes,
             };
-            //Convert both to UNIX timestamps here itself
             if (usMarketStatus.local_open) {
                 const [hours, minutes] = usMarketStatus.local_open.split(":");
-                const openDateTime = DateTime.fromObject({
-                    hour: parseInt(hours),
-                    minute: parseInt(minutes),
-                });
+                const openDateTime = DateTime.fromObject(
+                    {
+                        day: currentDateNY.day,
+                        month: currentDateNY.month,
+                        year: currentDateNY.year,
+                        hour: parseInt(hours),
+                        minute: parseInt(minutes),
+                    },
+                    { zone: "America/New_York" }
+                );
                 usMarketStatus.local_open = Math.floor(openDateTime.toSeconds()); //UNIX
             }
             // Convert local_close to UNIX timestamp
             if (usMarketStatus.local_close) {
                 const [hours, minutes] = usMarketStatus.local_close.split(":");
-                const closeDateTime = DateTime.fromObject({
-                    hour: parseInt(hours),
-                    minute: parseInt(minutes),
-                });
+                const closeDateTime = DateTime.fromObject(
+                    {
+                        day: currentDateNY.day,
+                        month: currentDateNY.month,
+                        year: currentDateNY.year,
+                        hour: parseInt(hours),
+                        minute: parseInt(minutes),
+                    },
+                    { zone: "America/New_York" }
+                );
                 usMarketStatus.local_close = Math.floor(closeDateTime.toSeconds()); //UNIX
             }
             console.log("Updated US market status");
