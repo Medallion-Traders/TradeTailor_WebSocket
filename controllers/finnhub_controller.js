@@ -2,6 +2,7 @@ import WebSocket from "ws";
 import dotenv from "dotenv";
 import axios from "axios";
 import cron from "node-cron";
+import { DateTime } from "luxon";
 
 dotenv.config();
 
@@ -11,16 +12,23 @@ const prices = {};
 let usMarketStatus = null;
 const subscriptions = {};
 
+//IIFE Function that runs once the code is initialized
+(async function() {
+    if (
+        !usMarketStatus ||
+        (usMarketStatus.local_open === null &&
+            usMarketStatus.local_close === null &&
+            usMarketStatus.notes !== null)
+    ) {
+        await updateUSMarketStatus();
+        console.log("Initialized market status");
+    }
+})();
+
 const ws = new WebSocket(`wss://ws.finnhub.io?token=${process.env.FINNHUB_API_KEY}`);
 
 ws.on("open", async () => {
-    try {
-        // Inform backend server that websocket is switched on
-        const backend_url = process.env.REACT_APP_SERVER_URL;
-        await axios.get(`${backend_url}/webSocket`);
-    } catch (axiosError) {
-        console.log("Error connecting to backend server, connection terminated");
-    }
+    console.log("Connection to Finnhub service successful");
 });
 
 ws.on("message", (data) => {
@@ -41,21 +49,21 @@ ws.on("error", (error) => {
     console.log("WebSocket error: ", error);
 });
 
-function waitForPrice(ticker, attempts = 1) {
-    return new Promise((resolve, reject) => {
-        let count = 0;
-        const intervalId = setInterval(() => {
-            if (prices[ticker]) {
-                clearInterval(intervalId);
-                resolve(prices[ticker]);
-            } else if (count > attempts) {
-                clearInterval(intervalId);
-                reject(new Error("Price update timed out"));
-            }
-            count++;
-        }, 2000);
-    });
-}
+// function waitForPrice(ticker, attempts = 1) {
+//     return new Promise((resolve, reject) => {
+//         let count = 0;
+//         const intervalId = setInterval(() => {
+//             if (prices[ticker]) {
+//                 clearInterval(intervalId);
+//                 resolve(prices[ticker]);
+//             } else if (count > attempts) {
+//                 clearInterval(intervalId);
+//                 reject(new Error("Price update timed out"));
+//             }
+//             count++;
+//         }, 2000);
+//     });
+// }
 
 // Endpoint to get the current price for a ticker
 async function getPrice(req, res) {
@@ -173,6 +181,26 @@ async function updateUSMarketStatus() {
                 current_status: usMarket.current_status,
                 notes: usMarket.notes,
             };
+            //Convert both to UNIX timestamps here itself
+            if (usMarketStatus.local_open) {
+                const [hours, minutes] = usMarketStatus.local_open.split(":");
+                const openDateTime = DateTime.fromObject({
+                    hour: parseInt(hours),
+                    minute: parseInt(minutes),
+                    zone: "America/New_York",
+                });
+                usMarketStatus.local_open = Math.floor(openDateTime.toSeconds()); //UNIX
+            }
+            // Convert local_close to UNIX timestamp
+            if (usMarketStatus.local_close) {
+                const [hours, minutes] = usMarketStatus.local_close.split(":");
+                const closeDateTime = DateTime.fromObject({
+                    hour: parseInt(hours),
+                    minute: parseInt(minutes),
+                    zone: "America/New_York",
+                });
+                usMarketStatus.local_close = Math.floor(closeDateTime.toSeconds()); //UNIX
+            }
             console.log("Updated US market status");
         } else {
             console.log("Could not find US market data");
@@ -182,20 +210,35 @@ async function updateUSMarketStatus() {
     }
 }
 
-async function getMarketStatus(req, res) {
-    try {
-        if (!usMarketStatus) {
-            await updateUSMarketStatus();
-        }
-        return res.json(usMarketStatus);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal Server Error" });
+// Check if the current time is within the market open and close times
+function isMarketOpen() {
+    if (!usMarketStatus || !usMarketStatus.local_open || !usMarketStatus.local_close) {
+        // If the open or close times are not available, assume the market is closed
+        return false;
     }
+
+    const currentTime = Math.floor(new Date().getTime() / 1000);
+    const openTime = usMarketStatus.local_open;
+    const closeTime = usMarketStatus.local_close;
+
+    return currentTime >= openTime && currentTime <= closeTime;
 }
 
-// Schedule the updateUSMarketStatus function to run every hour
-cron.schedule("0 * * * *", updateUSMarketStatus);
+// Market status endpoint
+function getMarketStatus(req, res) {
+    if (!usMarketStatus) {
+        return res.status(500).json({ message: "Market status not available" });
+    }
+
+    const currentStatus = isMarketOpen() ? "open" : "closed";
+
+    return res.json({ ...usMarketStatus, current_status: currentStatus });
+}
+
+// Schedule the updateUSMarketStatus function to run at 6 AM Singapore time
+cron.schedule("0 6 * * *", updateUSMarketStatus, {
+    timezone: "Asia/Singapore",
+});
 
 // Add this to periodically unsubscribe from inactive tickers
 cron.schedule("0 * * * *", () => {
