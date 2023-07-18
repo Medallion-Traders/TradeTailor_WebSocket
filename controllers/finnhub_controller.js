@@ -2,7 +2,9 @@ import WebSocket from "ws";
 import dotenv from "dotenv";
 import axios from "axios";
 import cron from "node-cron";
-import { DateTime } from "luxon";
+import { DateTime, Settings } from "luxon";
+
+Settings.defaultZoneName = "America/New_York";
 
 dotenv.config();
 
@@ -187,7 +189,6 @@ async function updateUSMarketStatus() {
                 const openDateTime = DateTime.fromObject({
                     hour: parseInt(hours),
                     minute: parseInt(minutes),
-                    zone: "America/New_York",
                 });
                 usMarketStatus.local_open = Math.floor(openDateTime.toSeconds()); //UNIX
             }
@@ -197,7 +198,6 @@ async function updateUSMarketStatus() {
                 const closeDateTime = DateTime.fromObject({
                     hour: parseInt(hours),
                     minute: parseInt(minutes),
-                    zone: "America/New_York",
                 });
                 usMarketStatus.local_close = Math.floor(closeDateTime.toSeconds()); //UNIX
             }
