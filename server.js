@@ -6,6 +6,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import socketRouter from "./routes/socketRouter.js";
 import marketStatusRouter from "./routes/marketStatusRouter.js";
+import subscription from "./routes/subscribeRouter.js";
 
 dotenv.config();
 
@@ -20,7 +21,6 @@ function setupMiddleware(app) {
 
 // This function sets up all the routes for the app
 function setupRoutes(app) {
-    app.use("/webSocket", socketRouter);
     app.get("/", (req, res) => {
         console.log(
             `${process.env.PORT || 3002} Port server is ready and established connection with ${
@@ -31,7 +31,10 @@ function setupRoutes(app) {
             .status(200)
             .send("Server is ready and established connection with backend server");
     });
+
+    app.use("/webSocket", socketRouter);
     app.use("/getMarketStatus", marketStatusRouter);
+    app.use("/subscribe", subscription);
 }
 
 // The main function that starts the app

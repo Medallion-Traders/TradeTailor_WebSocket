@@ -19,7 +19,6 @@ dotenv.config();
 // This is a dictionary mapping tickers to prices
 const prices = {};
 let usMarketStatus = null;
-const subscriptions = {};
 
 //IIFE Function that runs once the code is initialized
 (async function() {
@@ -57,112 +56,6 @@ ws.on("message", (data) => {
 ws.on("error", (error) => {
     console.log("WebSocket error: ", error);
 });
-
-// function waitForPrice(ticker, attempts = 1) {
-//     return new Promise((resolve, reject) => {
-//         let count = 0;
-//         const intervalId = setInterval(() => {
-//             if (prices[ticker]) {
-//                 clearInterval(intervalId);
-//                 resolve(prices[ticker]);
-//             } else if (count > attempts) {
-//                 clearInterval(intervalId);
-//                 reject(new Error("Price update timed out"));
-//             }
-//             count++;
-//         }, 2000);
-//     });
-// }
-
-// Endpoint to get the current price for a ticker
-async function getPrice(req, res) {
-    try {
-        const ticker = req.params.ticker;
-
-        if (!usMarketStatus) {
-            await updateUSMarketStatus();
-        }
-
-        if (usMarketStatus.current_status == "closed") {
-            return res.json({
-                ticker,
-                price: undefined,
-            });
-        }
-
-        // If the ticker is not inside the cache, subscribe to it
-        if (!prices[ticker] && !subscriptions[ticker]) {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "subscribe", symbol: ticker }));
-            } else {
-                console.log("WebSocket is not open. Cannot subscribe to ticker:", ticker);
-            }
-            subscriptions[ticker] = Date.now();
-        }
-
-        //REPLACEMENT VERSION 1
-
-        let price = prices[ticker];
-
-        setTimeout(async () => {
-            // If the price is not available through WebSocket after 2 seconds, get it from the REST API
-            if (!price) {
-                const response = await axios.get(
-                    `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
-                );
-                if (response.data && response.data.c) {
-                    price = response.data.c; // Current price
-                    prices[ticker] = price; // Save the price in the cache
-                }
-            }
-            // Update the last access time every time you access a ticker
-            subscriptions[ticker] = Date.now();
-
-            // Return the price from the cache
-            return res.json({
-                ticker,
-                price: prices[ticker],
-            });
-        }, 2000);
-
-        //END OF VERSION 1
-        //REPLACEMENT VERSION 2
-
-        // let price;
-
-        // // Make an attempt to retrieve the price
-        // try {
-        //     price = await waitForPrice(ticker);
-        // } catch (error) {
-        //     console.log("No WebSocket update for price, falling back to REST API");
-        // }
-
-        // // If the price is not available through WebSocket, get it from the REST API
-        // if (!price) {
-        //     const response = await axios.get(
-        //         `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
-        //     );
-        //     if (response.data && response.data.c) {
-        //         price = response.data.c; // Current price
-        //         // Save the price in the cache
-        //         prices[ticker] = price;
-        //     }
-        // }
-
-        // // Update the last access time every time you access a ticker
-        // subscriptions[ticker] = Date.now();
-
-        // // Return the price from the cache
-        // return res.json({
-        //     ticker,
-        //     price: prices[ticker],
-        // });
-        //END OF VERSION 2
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-}
 
 // This function will update the US market open and close times
 async function updateUSMarketStatus() {
@@ -242,8 +135,48 @@ function isMarketOpen() {
     return currentTime >= openTime && currentTime <= closeTime;
 }
 
+//-----------------------------ENDPOINTS----------------------------------------------//
+
+// Endpoint to get the current price for a ticker
+async function getPrice(req, res) {
+    try {
+        const ticker = req.params.ticker;
+
+        // If the ticker is not inside the cache, subscribe to it
+        if (!prices[ticker]) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "subscribe", symbol: ticker }));
+            } else {
+                console.log("WebSocket is not open. Cannot subscribe to ticker:", ticker);
+            }
+        }
+
+        let price = prices[ticker];
+
+        // If the price is not available through WebSocket after 2 seconds, get it from the REST API
+        if (!price) {
+            const response = await axios.get(
+                `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
+            );
+            if (response.data && response.data.c) {
+                price = response.data.c; // Current price
+                prices[ticker] = price; // Save the price in the cache
+            }
+        }
+
+        // Return the price from the cache
+        return res.json({
+            ticker,
+            price: prices[ticker],
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
 // Market status endpoint
-function getMarketStatus(req, res) {
+async function getMarketStatus(req, res) {
     if (!usMarketStatus) {
         return res.status(500).json({ message: "Market status not available" });
     }
@@ -253,26 +186,28 @@ function getMarketStatus(req, res) {
     return res.json({ ...usMarketStatus, current_status: currentStatus });
 }
 
+async function subscribeToTickers(req, res) {
+    const tickers = req.body.tickers;
+
+    if (!tickers || !Array.isArray(tickers)) {
+        return res.status(400).json({ message: "Invalid request body" });
+    }
+
+    // Subscribe to each ticker
+    tickers.forEach((ticker) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "subscribe", symbol: ticker }));
+        } else {
+            console.log("WebSocket is not open. Cannot subscribe to ticker:", ticker);
+        }
+    });
+
+    return res.json({ message: "Subscribed to tickers" });
+}
+
 // Schedule the updateUSMarketStatus function to run at 6 AM Singapore time
 cron.schedule("0 6 * * *", updateUSMarketStatus, {
     timezone: "Asia/Singapore",
 });
 
-// Add this to periodically unsubscribe from inactive tickers
-cron.schedule("0 * * * *", () => {
-    const now = Date.now();
-    for (const [ticker, lastAccess] of Object.entries(subscriptions)) {
-        if (now - lastAccess > 3600000) {
-            // 1 hour of inactivity
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "subscribe", symbol: ticker }));
-            } else {
-                console.log("WebSocket is not open. Cannot subscribe to ticker:", ticker);
-            }
-            delete subscriptions[ticker];
-            delete prices[ticker];
-        }
-    }
-});
-
-export { getPrice, getMarketStatus };
+export { getPrice, getMarketStatus, subscribeToTickers };
