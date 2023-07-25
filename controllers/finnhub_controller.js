@@ -53,10 +53,12 @@ async function getPrice(req, res) {
             }
         }
 
+        const result = finnhubWS.getPrice(ticker);
+        console.log(result);
         // Return the price from the cache
         return res.json({
             ticker,
-            price: finnhubWS.getPrice(ticker),
+            price: result,
         });
     } catch (error) {
         console.log(error);
@@ -64,23 +66,8 @@ async function getPrice(req, res) {
     }
 }
 
-async function subscribeToTickers(req, res) {
-    const tickers = req.body.tickers;
-
-    if (!tickers || !Array.isArray(tickers)) {
-        return res.status(400).json({ message: "Invalid request body" });
-    }
-
-    // Subscribe to each ticker
-    tickers.forEach((ticker) => {
-        finnhubWS.send(JSON.stringify({ type: "subscribe", symbol: ticker }));
-    });
-
-    return res.json({ message: "Subscribed to tickers" });
-}
-
 cron.schedule("0 6 * * *", () => marketStatus.updateStatus(), {
     timezone: "Asia/Singapore",
 });
 
-export { getPrice, getMarketStatus, subscribeToTickers };
+export { getPrice, getMarketStatus };

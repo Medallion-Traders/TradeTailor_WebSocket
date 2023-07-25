@@ -86,30 +86,3 @@ describe("Test getMarketStatus function", () => {
         expect(res.json).toHaveBeenCalledWith({ message: "Market status not available" });
     });
 });
-
-describe("Test subscribeToTickers function", () => {
-    it("should subscribe to given tickers", async () => {
-        const req = { body: { tickers: ["AAPL", "GOOG"] } };
-        const res = {
-            json: jest.fn(),
-            status: jest.fn().mockReturnThis(),
-        };
-
-        await subscribeToTickers(req, res);
-
-        expect(res.json).toHaveBeenCalledWith({ message: "Subscribed to tickers" });
-    });
-
-    it("should return Invalid request body when tickers are not an array", async () => {
-        const req = { body: { tickers: "AAPL" } }; // tickers is a string here, not an array
-        const res = {
-            json: jest.fn(),
-            status: jest.fn().mockReturnThis(),
-        };
-
-        await subscribeToTickers(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({ message: "Invalid request body" });
-    });
-});

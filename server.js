@@ -6,7 +6,6 @@ import helmet from "helmet";
 import morgan from "morgan";
 import socketRouter from "./routes/socketRouter.js";
 import marketStatusRouter from "./routes/marketStatusRouter.js";
-import subscription from "./routes/subscribeRouter.js";
 
 dotenv.config();
 
@@ -34,7 +33,6 @@ function setupRoutes(app) {
 
     app.use("/webSocket", socketRouter);
     app.use("/getMarketStatus", marketStatusRouter);
-    app.use("/subscribe", subscription);
 }
 
 // The main function that starts the app
