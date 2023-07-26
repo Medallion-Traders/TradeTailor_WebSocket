@@ -30,7 +30,7 @@ function setupRoutes(app) {
             .status(200)
             .send("Server pinged successfully! [" + process.env.PORT || 3002 + "]");
     });
-
+    app.head("/", (req, res) => res.end());
     app.use("/webSocket", socketRouter);
     app.use("/getMarketStatus", marketStatusRouter);
 }
