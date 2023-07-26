@@ -28,7 +28,7 @@ function setupRoutes(app) {
         );
         return res
             .status(200)
-            .send("Server is ready and established connection with backend server");
+            .send("Server pinged successfully! [" + process.env.PORT || 3002 + "]");
     });
 
     app.use("/webSocket", socketRouter);
