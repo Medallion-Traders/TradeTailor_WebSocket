@@ -26,9 +26,7 @@ function setupRoutes(app) {
                 process.env.REACT_APP_SERVER_URL
             }`
         );
-        return res
-            .status(200)
-            .send("Server pinged successfully! [" + process.env.PORT || 3002 + "]");
+        return res.status(200).send("Server pinged successfully!");
     });
     app.head("/", (req, res) => res.end());
     app.use("/webSocket", socketRouter);
