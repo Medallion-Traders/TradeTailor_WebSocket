@@ -22,6 +22,8 @@ class USMarketStatus {
                     `https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
                 )
                 .catch((err) => console.log(err));
+
+            console.log("Received response from Alpha Vantage:", response.data);
             const markets = response.data.markets;
             const usMarket = markets.find((market) => market.region === "United States");
 
