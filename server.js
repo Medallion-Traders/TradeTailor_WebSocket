@@ -46,3 +46,18 @@ async function start() {
 }
 
 start();
+
+function printMemoryUsage() {
+    const usage = process.memoryUsage();
+    console.log(`Memory Usage:
+    RSS ${Math.round((usage.rss / 1024 / 1024) * 100) / 100} MB
+    Heap Total ${Math.round((usage.heapTotal / 1024 / 1024) * 100) / 100} MB
+    Heap Used ${Math.round((usage.heapUsed / 1024 / 1024) * 100) / 100} MB
+    External ${Math.round((usage.external / 1024 / 1024) * 100) / 100} MB`);
+}
+
+// Use the function
+printMemoryUsage();
+setInterval(() => {
+    printMemoryUsage();
+}, 10000); // Prints memory usage every 10 seconds
