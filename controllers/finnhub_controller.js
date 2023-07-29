@@ -66,7 +66,7 @@ async function getPrice(req, res) {
     }
 }
 
-cron.schedule("5 6 * * *", () => marketStatus.updateStatus(), {
+cron.schedule("5 6 * * 1-5", () => marketStatus.updateStatus(), {
     timezone: "Asia/Singapore",
 });
 
