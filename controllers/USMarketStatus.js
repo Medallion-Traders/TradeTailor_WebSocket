@@ -13,6 +13,7 @@ const currentDateNY = currentDate.setZone("America/New_York");
 class USMarketStatus {
     constructor() {
         this.status = null;
+        this.x = 0;
     }
 
     async updateStatus() {
@@ -21,6 +22,10 @@ class USMarketStatus {
                 .get(
                     `https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
                 )
+                .then(() => {
+                    this.x += 1;
+                    console.log(`AlphaVantage was queried ${this.x} times`);
+                })
                 .catch((err) => console.log(err));
 
             console.log("Received response from Alpha Vantage:", response.data);

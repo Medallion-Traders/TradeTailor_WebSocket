@@ -8,6 +8,7 @@ class FinnhubWebSocket {
         this.ws.on("message", this.handleMessage.bind(this));
         this.ws.on("error", this.handleError.bind(this));
         this.prices = {};
+        this.x = {};
     }
 
     handleOpen() {
