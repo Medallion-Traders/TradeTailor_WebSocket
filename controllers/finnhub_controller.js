@@ -44,14 +44,12 @@ async function getPrice(req, res) {
 
         // If the price is not available through WebSocket after 2 seconds, get it from the REST API
         if (!price) {
-            const response = await axios
-                .get(
-                    `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
-                )
-                .then(() => {
-                    finnhubWS.x += 1;
-                    console.log(`Finnhub's public service was used ${finnhubWS.x} times`);
-                });
+            const response = await axios.get(
+                `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`
+            );
+
+            finnhubWS.x += 1;
+            console.log(`Finnhub's public service was used ${finnhubWS.x} times`);
             if (response.data && response.data.c) {
                 price = response.data.c; // Current price
                 finnhubWS.prices[ticker] = price; // Save the price in the cache

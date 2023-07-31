@@ -22,13 +22,11 @@ class USMarketStatus {
                 .get(
                     `https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
                 )
-                .then(() => {
-                    this.x += 1;
-                    console.log(`AlphaVantage was queried ${this.x} times`);
-                })
                 .catch((err) => console.log(err));
 
-            console.log("Received response from Alpha Vantage:", response.data);
+            this.x += 1;
+            console.log(`AlphaVantage was queried ${this.x} times`);
+            console.log("Received response from Alpha Vantage:", response);
             const markets = response.data.markets;
             const usMarket = markets.find((market) => market.region === "United States");
 
