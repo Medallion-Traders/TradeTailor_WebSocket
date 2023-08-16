@@ -77,19 +77,19 @@ class USMarketStatus {
         }
     }
 
-    isOpen() {
-        if (!this.status || !this.status.local_open || !this.status.local_close) {
-            return false;
-        }
-        const currentTime = Math.floor(new Date().getTime() / 1000);
-        const openTime = this.status.local_open;
-        const closeTime = this.status.local_close;
-        return currentTime >= openTime && currentTime <= closeTime;
-    }
-
     // isOpen() {
-    //     return true;
+    //     if (!this.status || !this.status.local_open || !this.status.local_close) {
+    //         return false;
+    //     }
+    //     const currentTime = Math.floor(new Date().getTime() / 1000);
+    //     const openTime = this.status.local_open;
+    //     const closeTime = this.status.local_close;
+    //     return currentTime >= openTime && currentTime <= closeTime;
     // }
+
+    isOpen() {
+        return true;
+    }
 
     getStatus() {
         return this.status;
